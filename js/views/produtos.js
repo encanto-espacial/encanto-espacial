@@ -1,11 +1,11 @@
 // Cadastro de produtos: variações (tamanho/cor/tipo), custo, preço, margem, código de barras e importação.
 import {
   state, store, on, isSocio, nomeProduto, variante, custoDe, codigosExistentes, consignanteNome,
-  estoqueBaixo, opsMovimento, produtoPorCodigo, registrarLog
+  estoqueBaixo, opsMovimento, produtoPorCodigo, registrarLog, lerImagem
 } from '../state.js';
 import {
   $, $$, esc, brl, pct, num, arred, dec, toast, modal, confirmar, casaBusca, debounce, gerarEAN,
-  normalizaCodigo, listaCSV, lerForm, semAcento, eanValido
+  normalizaCodigo, listaCSV, lerForm, semAcento, eanValido, processarFoto
 } from '../util.js';
 import { ic } from '../icones.js';
 import { abrirScanner } from '../scanner.js';
@@ -80,10 +80,10 @@ export function render(main) {
         const marg = p.preco ? (p.preco - c) / p.preco : 0;
         const tag = p.ativo === false ? 'tag' : est <= 0 ? 'tag perigo' : estoqueBaixo(p) ? 'tag alerta' : 'tag ok';
         return `<tr class="clicavel" data-id="${p.id}">
-          <td><b>${esc(p.nome)}</b>${variante(p) ? `<br><span class="small">${esc(variante(p))}</span>` : ''}
+          <td><div class="prod-cel">${miniatura(p)}<div><b>${esc(p.nome)}</b>${variante(p) ? `<br><span class="small">${esc(variante(p))}</span>` : ''}
             <br><span class="small muted mono">${esc(p.codigo || 'sem código')}</span>
             ${p.consignanteId ? ` <span class="tag roxo">${esc(consignanteNome(p.consignanteId) || 'consignado')}</span>` : ''}
-            ${p.ativo === false ? ' <span class="tag">inativo</span>' : ''}</td>
+            ${p.ativo === false ? ' <span class="tag">inativo</span>' : ''}</div></div></td>
           <td class="opc">${esc(p.categoria || '')}</td>
           <td class="num">${esc(brl(p.preco))}</td>
           ${socio ? `<td class="num opc">${esc(brl(c))}</td><td class="num">${p.preco ? esc(pct(marg)) : '–'}</td>` : ''}
@@ -124,9 +124,9 @@ export function render(main) {
 function abrirProduto(p) {
   if (!p) return;
   if (isSocio()) return formProduto(p);
-  modal({
+  const m = modal({
     titulo: nomeProduto(p),
-    html: `<table><tbody>
+    html: `${p.foto ? `<div class="foto-grande"><img src="${p.foto}" alt="" data-foto-grande></div>` : ''}<table><tbody>
       <tr><th>Código</th><td class="mono">${esc(p.codigo || '')}</td></tr>
       <tr><th>Categoria</th><td>${esc(p.categoria || '')}</td></tr>
       <tr><th>Preço</th><td><b>${esc(brl(p.preco))}</b></td></tr>
@@ -135,6 +135,12 @@ function abrirProduto(p) {
     </tbody></table>`,
     botoes: [{ t: 'Etiquetas', acao: () => enviarParaEtiquetas([{ produtoId: p.id, qtd: 1 }]) }, { t: 'Fechar', cls: 'prim' }]
   });
+  if (p.foto) lerImagem(p.id).then((img) => { const el = m.el.querySelector('[data-foto-grande]'); if (img && el) el.src = img; });
+}
+
+/** Miniatura do produto (ou ícone quando não há foto). */
+export function miniatura(p, cls = 'thumb') {
+  return p?.foto ? `<img class="${cls}" src="${p.foto}" alt="" loading="lazy">` : `<span class="${cls} sem-foto">${ic('caixa')}</span>`;
 }
 
 // =====================================================================
@@ -147,6 +153,9 @@ export function formProduto(p = {}) {
   const custo = editando ? custoDe(p.id) : (p.custo ?? '');
   let modo = 'unico';
   let grade = [];
+  let foto = p.foto || '';          // miniatura (fica no cadastro do produto)
+  let imagem = p._imagem || null;   // foto ampliada (fica em imagens/{id})
+  let fotoMudou = !editando && !!foto;
 
   const m = modal({
     titulo: editando ? 'Editar produto' : 'Novo produto',
@@ -154,6 +163,18 @@ export function formProduto(p = {}) {
     html: `
       ${editando ? '' : `<div class="abas" id="abasModo"><button type="button" data-m="unico" class="ativo">Produto único</button><button type="button" data-m="grade">Com variações (tamanho / cor / tipo)</button></div>`}
       <div class="form" id="fp">
+        <div class="full foto-bloco">
+          <div class="foto-prev" data-prev></div>
+          <div>
+            <b>Foto do produto</b>
+            <div class="acoes" style="margin-top:8px">
+              <label class="btn">${ic('camera')} Tirar foto<input type="file" accept="image/*" capture="environment" hidden data-foto></label>
+              <label class="btn">${ic('subir')} Escolher imagem<input type="file" accept="image/*" hidden data-foto></label>
+              <button type="button" class="btn fantasma" data-sem-foto>${ic('lixo')} Remover</button>
+            </div>
+            <p class="dica">A imagem é reduzida automaticamente. ${editando ? '' : 'Em produtos com variações, a mesma foto vai para todas.'}</p>
+          </div>
+        </div>
         <label class="campo full"><span>Nome do produto *</span><input name="nome" value="${esc(p.nome || '')}" placeholder="Ex.: Camiseta Disco Voador" autofocus></label>
         <label class="campo"><span>Categoria</span><input name="categoria" list="dlCat" value="${esc(p.categoria || '')}"><datalist id="dlCat">${cats.map((c) => `<option value="${esc(c)}">`).join('')}</datalist></label>
         <label class="campo"><span>Estoque mínimo (alerta)</span><input name="estoqueMin" inputmode="numeric" value="${esc(p.estoqueMin ?? 2)}"></label>
@@ -198,7 +219,7 @@ export function formProduto(p = {}) {
         { t: 'Excluir', cls: 'perigo', acao: async ({ close }) => { if (await excluir(p)) close(); return false; } },
         { t: p.ativo === false ? 'Reativar' : 'Inativar', acao: () => { store.commit([{ op: 'update', col: 'produtos', id: p.id, data: { ativo: p.ativo === false, atualizadoEm: Date.now() } }]); registrarLog('produto_status', `${p.ativo === false ? 'Reativou' : 'Inativou'} ${nomeProduto(p)}`, { produtoId: p.id }); toast('Produto atualizado.', 'ok'); } },
         { t: 'Etiquetas', acao: () => enviarParaEtiquetas([{ produtoId: p.id, qtd: Math.max(1, Number(p.estoque) || 1) }]) },
-        { t: 'Nova variação', acao: () => { formProduto({ ...p, id: undefined, codigo: '', estoque: 0, custo: custoDe(p.id) }); } }
+        { t: 'Nova variação', acao: () => { formProduto({ ...p, id: undefined, codigo: '', estoque: 0, custo: custoDe(p.id), foto, _imagem: imagem }); } }
       ] : []),
       { t: 'Cancelar' },
       { t: 'Salvar', cls: 'prim', acao: () => salvar() }
@@ -215,6 +236,26 @@ export function formProduto(p = {}) {
   $('[name=preco]', c).oninput = atualizarMargem;
   $('[name=custo]', c).oninput = atualizarMargem;
   atualizarMargem();
+  const desenharFoto = () => {
+    $('[data-prev]', c).innerHTML = imagem || foto ? `<img src="${imagem || foto}" alt="">` : `<span class="muted small center">${ic('camera')}<br>Sem foto</span>`;
+    $('[data-sem-foto]', c).classList.toggle('hidden', !foto);
+  };
+  $$('[data-foto]', c).forEach((inp) => {
+    inp.onchange = async () => {
+      const arq = inp.files[0];
+      inp.value = '';
+      if (!arq) return;
+      try {
+        $('[data-prev]', c).innerHTML = '<span class="muted small">Processando…</span>';
+        ({ foto, imagem } = await processarFoto(arq));
+        fotoMudou = true;
+      } catch (e) { toast(e.message, 'erro'); }
+      desenharFoto();
+    };
+  });
+  $('[data-sem-foto]', c).onclick = () => { foto = ''; imagem = null; fotoMudou = true; desenharFoto(); };
+  desenharFoto();
+  if (editando && foto && !imagem) lerImagem(p.id).then((img) => { if (img && !fotoMudou) { imagem = img; desenharFoto(); } });
   $$('[name=origem]', c).forEach((r) => { r.onchange = () => $('#boxCons', c).classList.toggle('hidden', !$('[name=origem][value=consignado]', c).checked); });
   $('[data-gerar]', c).onclick = () => { $('[name=codigo]', c).value = gerarEAN(codigosExistentes()); };
   $('[data-cam]', c).onclick = () => abrirScanner({ onCode: (cod) => { $('[name=codigo]', c).value = cod; } });
@@ -285,6 +326,7 @@ export function formProduto(p = {}) {
       nome, categoria: f.categoria, descricao: f.descricao, preco, estoqueMin: Math.round(num(f.estoqueMin)),
       consignanteId, atualizadoEm: agora
     };
+    if (fotoMudou || !editando) base.foto = foto || '';
     const usados = codigosExistentes();
     if (editando) usados.delete(p.codigo);
 
@@ -315,6 +357,12 @@ export function formProduto(p = {}) {
       }
     }
     store.commit(ops);
+    // Foto ampliada: gravação separada, para nunca impedir o cadastro do produto
+    if (fotoMudou) {
+      const ids = editando ? [p.id] : ops.filter((o) => o.col === 'produtos' && o.op === 'set').map((o) => o.id);
+      const opsImg = ids.map((id) => (imagem ? { op: 'set', col: 'imagens', id, data: { img: imagem, atualizadoEm: agora } } : { op: 'delete', col: 'imagens', id }));
+      if (opsImg.length && (imagem || editando)) store.commit(opsImg, { silencioso: true }).catch(() => toast('A foto ampliada não foi salva. Verifique as regras do Firebase (veja o README).', 'alerta', 7000));
+    }
     if (editando) {
       const it = itens[0];
       const depois = { ...p, ...base, ...it };
@@ -327,6 +375,7 @@ export function formProduto(p = {}) {
       const mud = campos.filter(([, , f]) => f(p) !== f(depois)).map(([, t, f]) => `${t}: ${f(p)} → ${f(depois)}`);
       if (custoDe(p.id) !== custoN) mud.push(`Custo: ${R(custoDe(p.id))} → ${R(custoN)}`);
       if (f.descricao !== (p.descricao || '')) mud.push('Descrição alterada');
+      if (fotoMudou) mud.push(foto ? 'Foto alterada' : 'Foto removida');
       if (mud.length) registrarLog('produto_editado', `${nomeProduto(depois)}: ${mud.join('; ')}`, { produtoId: p.id, alteracoes: mud });
     } else {
       registrarLog('produto_criado', `${itens.length > 1 ? `${itens.length} variações de ` : ''}${nome} – preço ${brl(preco)}, custo ${brl(custoN)}, estoque inicial ${itens.reduce((t, i) => t + (i.estoque || 0), 0)}`,
@@ -342,6 +391,7 @@ async function excluir(p) {
   const ok = await confirmar(`Excluir definitivamente "${nomeProduto(p)}"? As vendas antigas continuam no histórico. Se preferir manter o cadastro, use "Inativar".`, { ok: 'Excluir', perigo: true });
   if (!ok) return false;
   store.commit([{ op: 'delete', col: 'produtos', id: p.id }, { op: 'delete', col: 'custos', id: p.id }]);
+  if (p.foto) store.commit([{ op: 'delete', col: 'imagens', id: p.id }], { silencioso: true }).catch(() => {});
   registrarLog('produto_excluido', `Excluiu ${nomeProduto(p)} (código ${p.codigo || '—'}, estoque ${Number(p.estoque) || 0})`, { produtoId: p.id, codigo: p.codigo });
   toast('Produto excluído.', 'ok');
   return true;

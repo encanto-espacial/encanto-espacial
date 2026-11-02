@@ -210,3 +210,38 @@ export function imprimir(html, pageCss = '@page { margin: 8mm; }') {
   // Só o CSS de impressão usa a classe/área, então não há problema se "afterprint" não disparar.
   setTimeout(() => window.print(), 150);
 }
+
+// ---------- Imagens ----------
+function carregarImg(arquivo) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(arquivo);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); res(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Não foi possível ler a imagem. Use JPG ou PNG.')); };
+    img.src = url;
+  });
+}
+function desenhar(img, w, h, sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight, q = 0.72) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); // fundo branco para PNG transparente
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', q);
+}
+/**
+ * Comprime a foto escolhida: miniatura quadrada (~5 KB, para listas) e
+ * foto ampliada de até 640 px (~40–70 KB). Retorna data URLs JPEG.
+ */
+export async function processarFoto(arquivo) {
+  if (!arquivo || !/^image\//.test(arquivo.type)) throw new Error('Escolha um arquivo de imagem.');
+  const img = await carregarImg(arquivo);
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const lado = Math.min(W, H);
+  const foto = desenhar(img, 120, 120, (W - lado) / 2, (H - lado) / 2, lado, lado, 0.7);
+  const esc2 = Math.min(1, 640 / Math.max(W, H));
+  let imagem = desenhar(img, Math.round(W * esc2), Math.round(H * esc2), 0, 0, W, H, 0.72);
+  if (imagem.length > 300000) imagem = desenhar(img, Math.round(W * esc2), Math.round(H * esc2), 0, 0, W, H, 0.5);
+  return { foto, imagem };
+}

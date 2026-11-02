@@ -4,6 +4,7 @@ import { $, esc, brl, num, arred, toast, modal, casaBusca, debounce, dec } from 
 import { ic } from '../icones.js';
 import { abrirScanner } from '../scanner.js';
 import { imprimirComprovante, whatsappComprovante } from '../comprovante.js';
+import { miniatura } from './produtos.js';
 
 const CHAVE = 'ee_carrinho';
 const ponteiroFino = matchMedia('(pointer: fine)').matches;
@@ -68,8 +69,8 @@ export function render(main) {
     elItens.innerHTML = t.ls.length ? t.ls.map((l, i) => {
       const est = Number(l.produto.estoque) || 0;
       return `<div class="carrinho-item" data-i="${i}">
-        <div><div class="nome">${esc(nomeProduto(l.produto))}</div>
-          <div class="small muted">${esc(brl(l.preco))} un. · estoque ${est}${est < l.qtd ? ' <span class="tag alerta">estoque insuficiente</span>' : ''}${l.produto.consignanteId ? ' <span class="tag roxo">consignado</span>' : ''}</div></div>
+        <div class="prod-cel">${miniatura(l.produto)}<div><div class="nome">${esc(nomeProduto(l.produto))}</div>
+          <div class="small muted">${esc(brl(l.preco))} un. · estoque ${est}${est < l.qtd ? ' <span class="tag alerta">estoque insuficiente</span>' : ''}${l.produto.consignanteId ? ' <span class="tag roxo">consignado</span>' : ''}</div></div></div>
         <div class="qtd"><button data-menos>−</button><input data-q value="${l.qtd}" inputmode="numeric"><button data-mais>+</button></div>
         <div class="right"><b>${esc(brl(l.qtd * l.preco))}</b><br><button class="btn icone peq fantasma" data-rem title="Remover">${ic('lixo')}</button></div>
       </div>`;
@@ -98,7 +99,7 @@ export function render(main) {
     termo = termo.trim();
     if (termo.length < 2) { elRes.innerHTML = ''; return []; }
     const r = state.produtos.filter((p) => p.ativo !== false && (p.codigo === termo || casaBusca(`${nomeProduto(p)} ${p.categoria || ''} ${p.codigo || ''}`, termo))).slice(0, 40);
-    elRes.innerHTML = r.length ? r.map((p) => `<button type="button" data-id="${p.id}"><span><b>${esc(nomeProduto(p))}</b><br><small class="muted">${esc(p.codigo || 'sem código')} · estoque ${Number(p.estoque) || 0}</small></span><b>${esc(brl(p.preco))}</b></button>`).join('')
+    elRes.innerHTML = r.length ? r.map((p) => `<button type="button" data-id="${p.id}"><span class="prod-cel">${miniatura(p)}<span><b>${esc(nomeProduto(p))}</b><br><small class="muted">${esc(p.codigo || 'sem código')} · estoque ${Number(p.estoque) || 0}</small></span></span><b>${esc(brl(p.preco))}</b></button>`).join('')
       : '<div class="vazio">Nenhum produto encontrado.</div>';
     return r;
   }

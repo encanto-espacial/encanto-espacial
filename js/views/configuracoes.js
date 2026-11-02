@@ -3,7 +3,7 @@ import { state, store, opsMovimento, nomeProduto, nomeUsuario, registrarLog } fr
 import { $, esc, toast, lerForm, listaCSV, num, baixarArquivo, confirmar, diaISO, gerarEAN, numeroVenda, arred } from '../util.js';
 import { ic } from '../icones.js';
 
-const COLECOES = ['produtos', 'custos', 'consignantes', 'vendas', 'movimentos', 'acertos', 'usuarios', 'config'];
+const COLECOES = ['produtos', 'imagens', 'custos', 'consignantes', 'vendas', 'movimentos', 'acertos', 'usuarios', 'config'];
 
 export function render(main) {
   const c = state.config;

@@ -96,6 +96,12 @@ const SECOES = [
       <li>Em <b>Código de barras</b>: leia o código da embalagem, digite, ou toque em <b>Gerar</b> se o produto não tiver código (depois imprima a etiqueta).</li>
       <li>Informe o <b>estoque inicial</b> e toque em <b>Salvar</b>.</li>
     </ol>
+    <h4>Foto do produto</h4>
+    <ul>
+      <li>No cadastro, toque em <b>Tirar foto</b> (abre a câmera) ou <b>Escolher imagem</b> (galeria/arquivo). Para trocar, é só escolher outra; para tirar, toque em <b>Remover</b>.</li>
+      <li>A imagem é reduzida automaticamente. A miniatura aparece na lista de produtos e no PDV, ajudando o vendedor a conferir o item.</li>
+      <li>Dica: fotografe o produto sobre um fundo liso e bem iluminado, centralizado.</li>
+    </ul>
     <h4>Produtos com variações (camisas, bonés…)</h4>
     <ol>
       <li>Em <b>Novo produto</b>, escolha a aba <b>Com variações</b>.</li>

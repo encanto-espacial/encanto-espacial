@@ -324,3 +324,15 @@ tr.cancelada td { color: #98a2b3; text-decoration: line-through; }
 .ajuda-corpo svg.i { width: 16px; height: 16px; vertical-align: -3px; }
 .ajuda-corpo th { white-space: nowrap; text-transform: none; font-size: .85rem; color: var(--texto); vertical-align: top; }
 @media (max-width: 600px) { .ajuda-corpo th { white-space: normal; } }
+
+/* ---------- Fotos de produtos ---------- */
+.prod-cel { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.prod-cel > div, .prod-cel > span:last-child { min-width: 0; }
+.thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex: none; background: #eef1f6; display: inline-flex; align-items: center; justify-content: center; }
+.thumb.sem-foto { color: #b4bccc; }
+.thumb.sem-foto svg { width: 20px; height: 20px; }
+.foto-bloco { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 10px; border: 1px dashed #cfd5e2; border-radius: 12px; background: #fafbfd; }
+.foto-prev { width: 120px; height: 120px; border-radius: 12px; overflow: hidden; background: #eef1f6; display: flex; align-items: center; justify-content: center; flex: none; }
+.foto-prev img { width: 100%; height: 100%; object-fit: cover; }
+.foto-grande { text-align: center; margin-bottom: 12px; }
+.foto-grande img { max-width: 100%; max-height: 50vh; border-radius: 12px; }

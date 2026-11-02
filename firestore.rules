@@ -75,6 +75,12 @@ service cloud.firestore {
       allow read, write: if socio();
     }
 
+    // Fotos ampliadas dos produtos (a miniatura fica no próprio produto).
+    match /imagens/{id} {
+      allow read: if ativo();
+      allow write: if socio();
+    }
+
     // Log de atividades: cada usuário grava apenas as próprias ações; só sócios leem.
     // Ninguém pode alterar ou apagar registros (trilha de auditoria).
     match /logs/{id} {

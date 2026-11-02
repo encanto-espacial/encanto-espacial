@@ -152,6 +152,18 @@ export function cancelarVenda(venda, motivo) {
 }
 
 export const PAGAMENTOS = { pix: 'Pix', dinheiro: 'Dinheiro', debito: 'Débito', credito: 'Crédito' };
+/** Lê a foto ampliada de um produto (fica no cache do aparelho depois da 1ª vez). */
+export function lerImagem(produtoId) {
+  return new Promise((resolve) => {
+    let feito = false;
+    let unsub = null;
+    const fim = (v) => { if (feito) return; feito = true; resolve(v); setTimeout(() => unsub && unsub(), 0); };
+    setTimeout(() => fim(null), 8000);
+    unsub = store.subscribeDoc('imagens', produtoId, (d, meta) => { if (d || !meta?.fromCache) fim(d?.img || null); });
+    if (feito) unsub();
+  });
+}
+
 // =====================================================================
 //  LOG DE ATIVIDADES (auditoria para os sócios)
 // =====================================================================
