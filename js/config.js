@@ -20,7 +20,14 @@
 //  Esses valores NÃO são senhas: a proteção dos dados é feita pelas
 //  regras do arquivo firestore.rules e pelo login de cada usuário.
 // =====================================================================
-export const FIREBASE_CONFIG = null;
+export const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyCezEN03d9Tv5rHrb08sK9OxBrGsZEjENk',
+  authDomain: 'encanto-espacial.firebaseapp.com',
+  projectId: 'encanto-espacial',
+  storageBucket: 'encanto-espacial.firebasestorage.app',
+  messagingSenderId: '93653361992',
+  appId: '1:93653361992:web:f354208b478b600fd17f7d'
+};
 
 export const LOJA_PADRAO = {
   nome: 'Encanto Espacial',
