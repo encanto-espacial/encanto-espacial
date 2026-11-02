@@ -1,6 +1,6 @@
 // Service worker: guarda os arquivos do app para funcionar sem internet.
 // Ao publicar uma nova versão, altere VERSAO para forçar a atualização.
-const VERSAO = 'ee-v2';
+const VERSAO = 'ee-v3';
 const ARQUIVOS = [
   "./",
   "assets/apple-touch-icon.png",
@@ -22,6 +22,7 @@ const ARQUIVOS = [
   "js/store/index.js",
   "js/store/local.js",
   "js/util.js",
+  "js/views/ajuda.js",
   "js/views/configuracoes.js",
   "js/views/consignacao.js",
   "js/views/estoque.js",

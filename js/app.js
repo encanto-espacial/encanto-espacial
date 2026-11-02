@@ -13,6 +13,7 @@ import * as consignacao from './views/consignacao.js';
 import * as relatorios from './views/relatorios.js';
 import * as usuarios from './views/usuarios.js';
 import * as configuracoes from './views/configuracoes.js';
+import * as ajuda from './views/ajuda.js';
 
 const ROTAS = {
   painel: { t: 'Painel de vendas', i: 'painel', v: painel, socio: true },
@@ -24,7 +25,8 @@ const ROTAS = {
   consignacao: { t: 'Consignação', i: 'maos', v: consignacao, socio: true },
   relatorios: { t: 'Relatórios', i: 'relatorio', v: relatorios, socio: true },
   usuarios: { t: 'Usuários', i: 'usuarios', v: usuarios, socio: true },
-  configuracoes: { t: 'Configurações', i: 'config', v: configuracoes, socio: true }
+  configuracoes: { t: 'Configurações', i: 'config', v: configuracoes, socio: true },
+  ajuda: { t: 'Ajuda / Como usar', i: 'ajuda', v: ajuda }
 };
 
 const app = document.getElementById('app');
@@ -184,6 +186,7 @@ function montarLayout() {
         <button class="btn icone fantasma menu-btn" id="btnMenu" aria-label="Menu">${ic('menu')}</button>
         <h1 id="titulo"></h1>
         <span class="status" id="status"></span>
+        <a class="btn icone fantasma" id="btnAjuda" href="#/ajuda" title="Ajuda desta tela" aria-label="Ajuda">${ic('ajuda')}</a>
       </header>
       <main id="main"></main>
     </div></div>`;
@@ -223,6 +226,7 @@ function navegar() {
   const r = ROTAS[rota];
   $$('#nav a').forEach((a) => a.classList.toggle('ativo', a.dataset.rota === rota));
   $('#titulo').textContent = r.t;
+  $('#btnAjuda').setAttribute('href', rota === 'ajuda' ? '#/ajuda' : `#/ajuda/${rota}`);
   document.title = `${r.t} · ${state.config.nome}`;
   if (limparView) { try { limparView(); } catch (e) { console.error(e); } limparView = null; }
   main.innerHTML = '';
