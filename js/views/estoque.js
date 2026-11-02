@@ -1,5 +1,5 @@
 // Entrada e saída de mercadorias por código de barras + inventário (contagem).
-import { state, store, on, isSocio, nomeProduto, produtoPorCodigo, opsMovimento, MOTIVOS } from '../state.js';
+import { state, store, on, isSocio, nomeProduto, produtoPorCodigo, opsMovimento, MOTIVOS, registrarLog } from '../state.js';
 import { $, $$, esc, num, toast, modal, confirmar, casaBusca, lerForm } from '../util.js';
 import { ic } from '../icones.js';
 import { abrirScanner } from '../scanner.js';
@@ -141,6 +141,8 @@ function movimento(el, tipo) {
     const ops = ls.flatMap((i) => opsMovimento({ produto: i.p, qtd: entrada ? i.qtd : -i.qtd, tipo, motivo: f.motivo, documento: f.documento, obs: f.obs, agora }));
     store.commit(ops);
     const total = ls.reduce((s, i) => s + i.qtd, 0);
+    registrarLog(entrada ? 'entrada' : 'saida', `${entrada ? 'Entrada' : 'Saída'} de ${total} unidade(s) em ${ls.length} produto(s) – ${f.motivo}${f.documento ? ` (doc. ${f.documento})` : ''}`,
+      { motivo: f.motivo, documento: f.documento, obs: f.obs, itens: ls.map((i) => `${entrada ? '+' : '-'}${i.qtd} ${nomeProduto(i.p)}`) });
     const paraEtq = ls.map((i) => ({ produtoId: i.produtoId, qtd: i.qtd }));
     itens = []; salvar(); desenhar();
     $$('[data-form] input, [data-form] textarea', el).forEach((x) => { x.value = ''; });
@@ -221,6 +223,8 @@ function inventario(el) {
     if (!await confirmar(`Ajustar o estoque de ${difs.length} produto(s) conforme a contagem?`, { ok: 'Aplicar' })) return;
     const agora = Date.now();
     store.commit(difs.flatMap((l) => opsMovimento({ produto: l.p, qtd: l.dif, tipo: 'ajuste', motivo: 'Inventário', obs: `Sistema ${l.sistema} → contado ${l.contado}`, agora })));
+    registrarLog('inventario', `Aplicou inventário: ${difs.length} produto(s) ajustado(s), saldo ${difs.reduce((s, l) => s + l.dif, 0) > 0 ? '+' : ''}${difs.reduce((s, l) => s + l.dif, 0)} unidade(s)`,
+      { ajustes: difs.map((l) => `${nomeProduto(l.p)}: ${l.sistema} → ${l.contado}`) });
     cont = {}; salvar(); desenhar();
     toast('Inventário aplicado.', 'ok');
   };

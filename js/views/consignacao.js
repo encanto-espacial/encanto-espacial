@@ -1,5 +1,5 @@
 // Consignação: cadastro de consignantes (artesãos/parceiros), acerto de contas e histórico.
-import { state, store, on, nomeProduto, custoDe, consignanteNome, nomeUsuario } from '../state.js';
+import { state, store, on, nomeProduto, custoDe, consignanteNome, nomeUsuario, registrarLog } from '../state.js';
 import { $, $$, esc, brl, toast, modal, lerForm, diaISO, deISO, inicioDia, fimDia, fmtData, somaDias, num, arred, dec } from '../util.js';
 import { buscarVendas, itensVendidos, agrupar } from '../calc.js';
 import { exportarPDF, exportarXLSX, tabelaHTML } from '../exportar.js';
@@ -63,6 +63,7 @@ export function formConsignante(c = {}) {
         if (!f.nome) { toast('Informe o nome.', 'erro'); return false; }
         const id = c.id || store.newId();
         store.commit([{ op: 'set', col: 'consignantes', id, data: { ...f, criadoEm: c.criadoEm || Date.now(), atualizadoEm: Date.now() }, merge: true }]);
+        registrarLog('consignante', `${c.id ? 'Alterou' : 'Cadastrou'} o consignante ${f.nome}${f.ativo ? '' : ' (inativo)'}`, { consignanteId: id });
         toast('Consignante salvo.', 'ok');
       }
     }]
@@ -140,6 +141,8 @@ function telaAcerto(el, acertos) {
             itens: grupos.map((g) => ({ produto: g.produto, qtd: g.qtd, repasse: arred(g.repasse) })),
             criadoEm: Date.now(), usuarioNome: nomeUsuario()
           } }]);
+          registrarLog('acerto', `Registrou pagamento de ${brl(num(f.valor))} (${f.forma}) a ${nome} – período ${fmtData(deISO(deS).getTime())} a ${fmtData(deISO(ateS).getTime())}, ${tot.qtd} un. vendidas (calculado ${brl(tot.repasse)})`,
+            { consignanteId: cid, valor: arred(num(f.valor)), calculado: arred(tot.repasse), forma: f.forma, obs: f.obs });
           toast('Acerto registrado.', 'ok');
         }
       }]

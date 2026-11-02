@@ -74,5 +74,13 @@ service cloud.firestore {
     match /acertos/{id} {
       allow read, write: if socio();
     }
+
+    // Log de atividades: cada usuário grava apenas as próprias ações; só sócios leem.
+    // Ninguém pode alterar ou apagar registros (trilha de auditoria).
+    match /logs/{id} {
+      allow create: if ativo() && request.resource.data.usuarioUid == request.auth.uid;
+      allow read: if socio();
+      allow update, delete: if false;
+    }
   }
 }

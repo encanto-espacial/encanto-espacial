@@ -1,6 +1,6 @@
 // Exportação de relatórios: PDF (jsPDF + AutoTable), Excel (SheetJS) e impressão.
 import { brl, n2, pct, fmtData, fmtDataHora, esc, imprimir, diaISO } from './util.js';
-import { state } from './state.js';
+import { state, registrarLog } from './state.js';
 
 /**
  * Estrutura de relatório:
@@ -83,6 +83,7 @@ export async function exportarPDF(rel) {
     }
   });
   doc.save(`${nomeArquivo(rel.titulo)}.pdf`);
+  registrarLog('relatorio', `Exportou PDF: ${rel.titulo}${rel.subtitulo ? ` – ${rel.subtitulo}` : ''}`);
 }
 
 export function exportarXLSX(rel) {
@@ -101,9 +102,11 @@ export function exportarXLSX(rel) {
   const wb = X.utils.book_new();
   X.utils.book_append_sheet(wb, ws, 'Relatório');
   X.writeFile(wb, `${nomeArquivo(rel.titulo)}.xlsx`);
+  registrarLog('relatorio', `Exportou Excel: ${rel.titulo}${rel.subtitulo ? ` – ${rel.subtitulo}` : ''}`);
 }
 
 export function imprimirRelatorio(rel) {
+  registrarLog('relatorio', `Imprimiu: ${rel.titulo}${rel.subtitulo ? ` – ${rel.subtitulo}` : ''}`);
   imprimir(`<div style="font-family:Arial,sans-serif;color:#000">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
       <img src="assets/logo.jpg" style="width:48px;height:48px;border-radius:50%">

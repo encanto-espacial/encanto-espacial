@@ -16,6 +16,7 @@ Funciona no **celular, tablet e notebook**, inclusive **sem internet**. Os dados
 | **Etiquetas** | Etiquetas com código de barras, nome e preço para **impressora térmica** (tamanho e colunas configuráveis) | ✅ | ✅ |
 | **Consignação** | Cadastro de artesãos e parceiros; **acerto de contas** por período (PDF, Excel, WhatsApp); registro de pagamentos e histórico | ✅ | – |
 | **Relatórios** | Vendas, curva ABC por produto, categorias, vendedores, fechamento de caixa, estoque valorizado, reposição, produtos parados, movimentações, consignação e cancelamentos, em **PDF, Excel ou impressão** | ✅ | – |
+| **Log de atividades** | Quem fez o quê e quando: acessos, vendas, cancelamentos, descontos, alterações de preço/custo, entradas/saídas, inventários, usuários, exportações; filtro de ações que merecem atenção; PDF/Excel | ✅ | – |
 | **Usuários** | Aprovação de contas e perfis (sócio ou vendedor); ativar e desativar | ✅ | – |
 | **Configurações** | Dados da loja, categorias, tamanhos, limite de desconto, backup e restauração, dados de exemplo | ✅ | – |
 

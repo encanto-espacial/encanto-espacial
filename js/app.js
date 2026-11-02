@@ -1,5 +1,5 @@
 // Inicialização, login, layout e navegação.
-import { store, state, on, emit, iniciarDados, pararDados, isSocio, nomeUsuario, PAPEIS } from './state.js';
+import { store, state, on, emit, iniciarDados, pararDados, isSocio, nomeUsuario, PAPEIS, registrarLog } from './state.js';
 import { $, $$, esc, toast, lerForm, diaISO } from './util.js';
 import { ic } from './icones.js';
 
@@ -14,6 +14,7 @@ import * as relatorios from './views/relatorios.js';
 import * as usuarios from './views/usuarios.js';
 import * as configuracoes from './views/configuracoes.js';
 import * as ajuda from './views/ajuda.js';
+import * as atividades from './views/atividades.js';
 
 const ROTAS = {
   painel: { t: 'Painel de vendas', i: 'painel', v: painel, socio: true },
@@ -25,6 +26,7 @@ const ROTAS = {
   consignacao: { t: 'Consignação', i: 'maos', v: consignacao, socio: true },
   relatorios: { t: 'Relatórios', i: 'relatorio', v: relatorios, socio: true },
   usuarios: { t: 'Usuários', i: 'usuarios', v: usuarios, socio: true },
+  atividades: { t: 'Log de atividades', i: 'lista', v: atividades, socio: true },
   configuracoes: { t: 'Configurações', i: 'config', v: configuracoes, socio: true },
   ajuda: { t: 'Ajuda / Como usar', i: 'ajuda', v: ajuda }
 };
@@ -32,6 +34,14 @@ const ROTAS = {
 const app = document.getElementById('app');
 let limparView = null;
 let unsubPerfil = null;
+let sessaoRegistrada = null;
+
+async function sair() {
+  // Registra a saída (aguarda no máximo 1,5 s para não travar sem internet)
+  await Promise.race([registrarLog('logout', 'Saiu do sistema'), new Promise((r) => setTimeout(r, 1500))]);
+  sessaoRegistrada = null;
+  store.logout();
+}
 
 // ---------------------------------------------------------------------
 //  Autenticação
@@ -197,7 +207,11 @@ function montarLayout() {
   $('#btnMenu').onclick = () => { lat.classList.add('aberta'); fundo.classList.add('aberto'); };
   fundo.onclick = fecharMenu;
   $('#nav').onclick = (e) => { if (e.target.closest('a')) fecharMenu(); };
-  $('[data-sair]').onclick = () => store.logout();
+  $('[data-sair]').onclick = sair;
+  if (sessaoRegistrada !== state.user.uid) {
+    sessaoRegistrada = state.user.uid;
+    registrarLog('login', `Acessou o sistema como ${PAPEIS[state.perfil.papel] || state.perfil.papel}`);
+  }
   atualizarStatus();
   navegar();
 }

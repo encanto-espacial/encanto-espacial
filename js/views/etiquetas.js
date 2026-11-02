@@ -1,5 +1,5 @@
 // Geração e impressão de etiquetas com código de barras (impressora térmica de etiquetas).
-import { state, store, on, isSocio, nomeProduto, produtoPorCodigo } from '../state.js';
+import { state, store, on, isSocio, nomeProduto, produtoPorCodigo, registrarLog } from '../state.js';
 import { $, esc, brl, num, toast, casaBusca, imprimir, eanValido, lerForm, gerarEAN } from '../util.js';
 import { codigosExistentes } from '../state.js';
 import { ic } from '../icones.js';
@@ -152,7 +152,9 @@ export function render(main) {
     if (!row) return;
     if (e.target.closest('[data-rem]')) { fila = fila.filter((f) => f.produtoId !== row.dataset.id); salvarFila(); desenhar(); }
     if (e.target.closest('[data-gerar]')) {
-      store.commit([{ op: 'update', col: 'produtos', id: row.dataset.id, data: { codigo: gerarEAN(codigosExistentes()), atualizadoEm: Date.now() } }]);
+      const codigo = gerarEAN(codigosExistentes());
+      store.commit([{ op: 'update', col: 'produtos', id: row.dataset.id, data: { codigo, atualizadoEm: Date.now() } }]);
+      registrarLog('codigo_gerado', `Gerou o código ${codigo} para ${nomeProduto(state.porId.get(row.dataset.id))}`, { produtoId: row.dataset.id, codigo });
     }
   };
   $('#filaEtq', main).onchange = (e) => {
@@ -163,7 +165,7 @@ export function render(main) {
   };
   $('#fCfg', main).oninput = () => { lerCfg(); desenhar(); };
   const bp = $('#btnPadrao', main);
-  if (bp) bp.onclick = () => { lerCfg(); store.commit([{ op: 'set', col: 'config', id: 'loja', data: { etiqueta: cfg }, merge: true }]); toast('Formato salvo como padrão.', 'ok'); };
+  if (bp) bp.onclick = () => { lerCfg(); store.commit([{ op: 'set', col: 'config', id: 'loja', data: { etiqueta: cfg }, merge: true }]); registrarLog('config', `Alterou o formato padrão das etiquetas para ${cfg.largura} × ${cfg.altura} mm, ${cfg.colunas} coluna(s)`, { etiqueta: cfg }); toast('Formato salvo como padrão.', 'ok'); };
 
   $('#btnImprimir', main).onclick = () => {
     lerCfg();
@@ -176,6 +178,8 @@ export function render(main) {
       html += `<div class="pagina-etq" style="width:${W}mm;height:${cfg.altura}mm;gap:${cfg.espaco}mm">${todas.slice(i, i + cfg.colunas).map((p) => etiquetaHTML(p, cfg)).join('')}</div>`;
     }
     imprimir(html, `@page { size: ${W}mm ${cfg.altura}mm; margin: 0; } html, body { margin: 0; padding: 0; }`);
+    const ls = itens().filter((i) => i.qtd > 0);
+    registrarLog('etiquetas', `Imprimiu ${todas.length} etiqueta(s) de ${ls.length} produto(s)`, { itens: ls.map((i) => `${i.qtd}x ${nomeProduto(i.p)}`) });
   };
 
   desenhar();

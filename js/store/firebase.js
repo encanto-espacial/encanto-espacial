@@ -84,7 +84,7 @@ export function createStore(config) {
      * Grava várias operações de forma atômica. Offline, a gravação entra na fila
      * local e a promessa só termina quando sincronizar — por isso as telas não aguardam.
      */
-    commit(ops) {
+    commit(ops, { silencioso = false } = {}) {
       const lotes = [];
       for (let i = 0; i < ops.length; i += 450) lotes.push(ops.slice(i, i + 450));
       const promessas = lotes.map((lote) => {
@@ -98,7 +98,7 @@ export function createStore(config) {
         pendentes++; emitStatus();
         return b.commit().then(
           () => { pendentes--; emitStatus(); },
-          (e) => { pendentes--; emitStatus(); console.error(e); emitErro(e); throw traduz(e); }
+          (e) => { pendentes--; emitStatus(); console.error(e); if (!silencioso) emitErro(e); throw traduz(e); }
         );
       });
       const p = Promise.all(promessas);

@@ -1,5 +1,5 @@
 // Gestão de usuários e perfis (somente sócios).
-import { state, store, on, PAPEIS } from '../state.js';
+import { state, store, on, PAPEIS, registrarLog } from '../state.js';
 import { $, esc, fmtData, modal, toast, lerForm, confirmar } from '../util.js';
 
 export function render(main) {
@@ -46,6 +46,7 @@ function editar(u) {
         t: 'Remover', cls: 'perigo', acao: async () => {
           if (!await confirmar(`Remover o acesso de ${u.nome}? O histórico de vendas é mantido.`, { perigo: true, ok: 'Remover' })) return false;
           store.commit([{ op: 'delete', col: 'usuarios', id: u.id }]);
+          registrarLog('usuario_removido', `Removeu o acesso de ${u.nome} (${u.email})`, { usuarioAlvo: u.id });
           toast('Usuário removido.', 'ok');
         }
       }]),
@@ -56,6 +57,11 @@ function editar(u) {
           const data = { nome: f.nome || u.nome };
           if (!eu) { data.papel = f.papel; data.ativo = f.ativo; }
           store.commit([{ op: 'update', col: 'usuarios', id: u.id, data }]);
+          const mud = [];
+          if (data.nome !== u.nome) mud.push(`nome: ${u.nome} → ${data.nome}`);
+          if (data.papel && data.papel !== u.papel) mud.push(`perfil: ${PAPEIS[u.papel] || u.papel} → ${PAPEIS[data.papel] || data.papel}`);
+          if (data.ativo !== undefined && data.ativo !== (u.ativo !== false)) mud.push(data.ativo ? 'acesso reativado' : 'acesso desativado');
+          if (mud.length) registrarLog('usuario', `${u.nome} (${u.email}): ${mud.join('; ')}`, { usuarioAlvo: u.id, alteracoes: mud });
           toast('Usuário atualizado.', 'ok');
         }
       }

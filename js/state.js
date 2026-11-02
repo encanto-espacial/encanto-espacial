@@ -130,6 +130,8 @@ export function registrarVenda({ itens, desconto = 0, pagamento, recebido = 0, c
   const ops = [{ op: 'set', col: 'vendas', id, data: venda }];
   for (const i of itens) ops.push(...opsMovimento({ produto: i.produto, qtd: -i.qtd, tipo: 'venda', motivo: 'Venda', vendaId: id, documento: venda.numero, agora }));
   store.commit(ops);
+  registrarLog('venda', `Venda ${venda.numero}: ${venda.qtdItens} item(ns), total R$ ${venda.total.toFixed(2).replace('.', ',')} (${PAGAMENTOS[pagamento] || pagamento})${venda.desconto ? `, desconto R$ ${venda.desconto.toFixed(2).replace('.', ',')}` : ''}`,
+    { vendaId: id, numero: venda.numero, total: venda.total, desconto: venda.desconto, pagamento, itens: venda.itens.map((i) => `${i.qtd}x ${i.nome} (R$ ${i.preco})`) });
   return { ...venda, id };
 }
 
@@ -144,10 +146,71 @@ export function cancelarVenda(venda, motivo) {
     const produto = state.porId.get(it.produtoId);
     if (produto) ops.push(...opsMovimento({ produto, qtd: it.qtd, tipo: 'cancelamento', motivo: 'Cancelamento de venda', obs: motivo, vendaId: venda.id, documento: venda.numero, agora }));
   }
+  registrarLog('venda_cancelada', `Cancelou a venda ${venda.numero} de ${venda.vendedorNome} (R$ ${Number(venda.total).toFixed(2).replace('.', ',')}). Motivo: ${motivo}`,
+    { vendaId: venda.id, numero: venda.numero, total: venda.total, motivo });
   return store.commit(ops);
 }
 
 export const PAGAMENTOS = { pix: 'Pix', dinheiro: 'Dinheiro', debito: 'Débito', credito: 'Crédito' };
+// =====================================================================
+//  LOG DE ATIVIDADES (auditoria para os sócios)
+// =====================================================================
+export const LOG_ACOES = {
+  login: ['Acesso', 'Entrou no sistema'],
+  logout: ['Acesso', 'Saiu do sistema'],
+  venda: ['Vendas', 'Venda registrada'],
+  venda_cancelada: ['Vendas', 'Venda cancelada'],
+  produto_criado: ['Produtos', 'Produto cadastrado'],
+  produto_editado: ['Produtos', 'Produto alterado'],
+  produto_status: ['Produtos', 'Produto ativado/inativado'],
+  produto_excluido: ['Produtos', 'Produto excluído'],
+  produtos_importados: ['Produtos', 'Importação de planilha'],
+  codigo_gerado: ['Produtos', 'Código de barras gerado'],
+  entrada: ['Estoque', 'Entrada de mercadoria'],
+  saida: ['Estoque', 'Saída / baixa'],
+  inventario: ['Estoque', 'Inventário aplicado'],
+  etiquetas: ['Etiquetas', 'Etiquetas impressas'],
+  consignante: ['Consignação', 'Consignante salvo'],
+  acerto: ['Consignação', 'Acerto registrado'],
+  usuario: ['Usuários', 'Usuário alterado'],
+  usuario_removido: ['Usuários', 'Usuário removido'],
+  config: ['Sistema', 'Configurações alteradas'],
+  backup_exportado: ['Sistema', 'Backup exportado'],
+  backup_importado: ['Sistema', 'Backup importado'],
+  exemplo: ['Sistema', 'Dados de exemplo carregados'],
+  relatorio: ['Sistema', 'Relatório exportado']
+};
+
+function dispositivo() {
+  const ua = navigator.userAgent;
+  const so = /Android/i.test(ua) ? 'Android' : /iPhone|iPad|iPod/i.test(ua) ? 'iPhone/iPad' : /Windows/i.test(ua) ? 'Windows'
+    : /Mac OS/i.test(ua) ? 'Mac' : /Linux/i.test(ua) ? 'Linux' : 'Outro';
+  const nav = /Edg\//.test(ua) ? 'Edge' : /SamsungBrowser/.test(ua) ? 'Samsung' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : '';
+  const app = matchMedia('(display-mode: standalone)').matches ? ' (app)' : '';
+  return `${so}${nav ? ' · ' + nav : ''}${app}`;
+}
+
+/**
+ * Registra uma ação no log. Gravação separada e silenciosa: uma falha no log
+ * nunca interfere na operação principal (venda, entrada etc.).
+ */
+export function registrarLog(acao, descricao, detalhes = {}) {
+  try {
+    if (!state.user || !state.perfil) return Promise.resolve();
+    const agora = Date.now();
+    const p = store.commit([{
+      op: 'set', col: 'logs', id: store.newId(), data: {
+        acao, categoria: (LOG_ACOES[acao] || ['Sistema'])[0], descricao: String(descricao || '').slice(0, 500),
+        detalhes: JSON.parse(JSON.stringify(detalhes || {})),
+        usuarioUid: state.user.uid, usuarioNome: nomeUsuario(), usuarioEmail: state.user.email || '', papel: state.perfil.papel,
+        dispositivo: dispositivo(), online: navigator.onLine, criadoEm: agora, dia: diaISO(new Date(agora))
+      }
+    }], { silencioso: true });
+    p.catch(() => {});
+    return p;
+  } catch (e) { console.warn('log', e); return Promise.resolve(); }
+}
+
 export const PAPEIS = { socio: 'Sócio', vendedor: 'Vendedor', pendente: 'Aguardando aprovação' };
 export const MOTIVOS = {
   entrada: ['Compra de fornecedor', 'Consignação recebida', 'Produção própria', 'Devolução de cliente', 'Ajuste'],

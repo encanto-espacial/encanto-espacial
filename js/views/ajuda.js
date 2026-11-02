@@ -219,6 +219,19 @@ const SECOES = [
     </ul>`
   },
   {
+    id: 'atividades', t: 'Log de atividades', i: 'lista', socio: true, html: `
+    <p>Mostra <b>quem fez o quê e quando</b> no sistema: acessos, vendas, cancelamentos, descontos, cadastros e alterações de produtos (com preço e custo antes e depois),
+    entradas e saídas, inventários, etiquetas, consignação, usuários, configurações e relatórios exportados.</p>
+    <ol>
+      <li>Escolha o <b>período</b> e, se quiser, filtre por <b>usuário</b>, <b>tipo</b> de ação ou palavra (ex.: nome do produto ou número da venda).</li>
+      <li>Marque <b>Somente ações que merecem atenção</b> para ver cancelamentos, vendas com desconto, perdas e quebras, ajustes de estoque, mudanças de preço/custo e alterações de usuários.</li>
+      <li>Toque em uma linha para ver os detalhes (itens, valores, aparelho usado e se foi feito sem internet).</li>
+      <li>No <b>Resumo por usuário</b>, toque em uma pessoa para ver só as ações dela.</li>
+      <li>Exporte em <b>PDF</b> ou <b>Excel</b> para guardar.</li>
+    </ol>
+    <p class="dica">Os registros não podem ser alterados nem apagados por ninguém, nem pelos sócios. Ações feitas sem internet aparecem quando o aparelho volta a ficar online.</p>`
+  },
+  {
     id: 'configuracoes', t: 'Configurações e backup', i: 'config', socio: true, html: `
     <ul>
       <li><b>Dados da loja:</b> nome, endereço, telefone e Instagram aparecem no comprovante.</li>

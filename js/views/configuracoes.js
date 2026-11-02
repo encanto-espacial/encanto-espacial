@@ -1,5 +1,5 @@
 // Configurações da loja, backup/restauração e dados de exemplo.
-import { state, store, opsMovimento, nomeProduto, nomeUsuario } from '../state.js';
+import { state, store, opsMovimento, nomeProduto, nomeUsuario, registrarLog } from '../state.js';
 import { $, esc, toast, lerForm, listaCSV, num, baixarArquivo, confirmar, diaISO, gerarEAN, numeroVenda, arred } from '../util.js';
 import { ic } from '../icones.js';
 
@@ -51,11 +51,16 @@ export function render(main) {
 
   $('#btnSalvarLoja', main).onclick = () => {
     const f = lerForm($('#fLoja', main));
-    store.commit([{ op: 'set', col: 'config', id: 'loja', merge: true, data: {
+    const novo = {
       nome: f.nome || 'Encanto Espacial', slogan: f.slogan, endereco: f.endereco, telefone: f.telefone, instagram: f.instagram,
       mensagemCupom: f.mensagemCupom, descontoMaxVendedor: num(f.descontoMaxVendedor),
       categorias: listaCSV(f.categorias), tamanhos: listaCSV(f.tamanhos)
-    } }]);
+    };
+    const ROT = { nome: 'Nome', slogan: 'Slogan', endereco: 'Endereço', telefone: 'Telefone', instagram: 'Instagram', mensagemCupom: 'Mensagem do comprovante', descontoMaxVendedor: 'Desconto máx. vendedor (%)', categorias: 'Categorias', tamanhos: 'Tamanhos' };
+    const mud = Object.keys(novo).filter((k) => JSON.stringify(novo[k] ?? '') !== JSON.stringify(state.config[k] ?? ''))
+      .map((k) => Array.isArray(novo[k]) ? `${ROT[k]} alteradas` : `${ROT[k]}: ${state.config[k] ?? ''} → ${novo[k]}`);
+    store.commit([{ op: 'set', col: 'config', id: 'loja', merge: true, data: novo }]);
+    if (mud.length) registrarLog('config', `Configurações da loja: ${mud.join('; ')}`, { alteracoes: mud });
     toast('Configurações salvas.', 'ok');
   };
 
@@ -64,6 +69,7 @@ export function render(main) {
       const dados = { app: 'encanto-espacial', versao: 1, geradoEm: new Date().toISOString(), colecoes: {} };
       for (const col of COLECOES) dados.colecoes[col] = await store.query(col, {});
       baixarArquivo(`backup_encanto_espacial_${diaISO()}.json`, JSON.stringify(dados));
+      registrarLog('backup_exportado', `Exportou backup (${Object.values(dados.colecoes).reduce((s, l) => s + l.length, 0)} registros)`);
       toast('Backup gerado.', 'ok');
     } catch (e) { toast(`Erro no backup: ${e.message}`, 'erro'); }
   };
@@ -86,6 +92,7 @@ export function render(main) {
         }
       }
       store.commit(ops);
+      registrarLog('backup_importado', `Importou backup de ${dados.geradoEm || 'data desconhecida'} (${ops.length} registros)`, { arquivo: arq.name });
       toast(`Backup importado (${ops.length} registros).`, 'ok', 5000);
     } catch (err) { toast(err.message, 'erro', 6000); } finally { e.target.value = ''; }
   };
@@ -159,4 +166,5 @@ function carregarExemplo() {
     }
   }
   store.commit(ops);
+  registrarLog('exemplo', `Carregou dados de exemplo (${criados.length} produtos e vendas fictícias)`);
 }

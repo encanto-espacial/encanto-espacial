@@ -1,7 +1,7 @@
 // Cadastro de produtos: variações (tamanho/cor/tipo), custo, preço, margem, código de barras e importação.
 import {
   state, store, on, isSocio, nomeProduto, variante, custoDe, codigosExistentes, consignanteNome,
-  estoqueBaixo, opsMovimento, produtoPorCodigo
+  estoqueBaixo, opsMovimento, produtoPorCodigo, registrarLog
 } from '../state.js';
 import {
   $, $$, esc, brl, pct, num, arred, dec, toast, modal, confirmar, casaBusca, debounce, gerarEAN,
@@ -196,7 +196,7 @@ export function formProduto(p = {}) {
     botoes: [
       ...(editando ? [
         { t: 'Excluir', cls: 'perigo', acao: async ({ close }) => { if (await excluir(p)) close(); return false; } },
-        { t: p.ativo === false ? 'Reativar' : 'Inativar', acao: () => { store.commit([{ op: 'update', col: 'produtos', id: p.id, data: { ativo: p.ativo === false, atualizadoEm: Date.now() } }]); toast('Produto atualizado.', 'ok'); } },
+        { t: p.ativo === false ? 'Reativar' : 'Inativar', acao: () => { store.commit([{ op: 'update', col: 'produtos', id: p.id, data: { ativo: p.ativo === false, atualizadoEm: Date.now() } }]); registrarLog('produto_status', `${p.ativo === false ? 'Reativou' : 'Inativou'} ${nomeProduto(p)}`, { produtoId: p.id }); toast('Produto atualizado.', 'ok'); } },
         { t: 'Etiquetas', acao: () => enviarParaEtiquetas([{ produtoId: p.id, qtd: Math.max(1, Number(p.estoque) || 1) }]) },
         { t: 'Nova variação', acao: () => { formProduto({ ...p, id: undefined, codigo: '', estoque: 0, custo: custoDe(p.id) }); } }
       ] : []),
@@ -315,6 +315,23 @@ export function formProduto(p = {}) {
       }
     }
     store.commit(ops);
+    if (editando) {
+      const it = itens[0];
+      const depois = { ...p, ...base, ...it };
+      const R = (v) => brl(v);
+      const campos = [
+        ['nome', 'Nome', (x) => x.nome], ['variação', 'Variação', (x) => variante(x)], ['categoria', 'Categoria', (x) => x.categoria || ''],
+        ['codigo', 'Código', (x) => x.codigo || ''], ['preco', 'Preço', (x) => R(x.preco)], ['estoqueMin', 'Estoque mínimo', (x) => String(Number(x.estoqueMin) || 0)],
+        ['consignante', 'Consignante', (x) => consignanteNome(x.consignanteId) || 'próprio'], ['estoque', 'Estoque', (x) => String(Number(x.estoque) || 0)]
+      ];
+      const mud = campos.filter(([, , f]) => f(p) !== f(depois)).map(([, t, f]) => `${t}: ${f(p)} → ${f(depois)}`);
+      if (custoDe(p.id) !== custoN) mud.push(`Custo: ${R(custoDe(p.id))} → ${R(custoN)}`);
+      if (f.descricao !== (p.descricao || '')) mud.push('Descrição alterada');
+      if (mud.length) registrarLog('produto_editado', `${nomeProduto(depois)}: ${mud.join('; ')}`, { produtoId: p.id, alteracoes: mud });
+    } else {
+      registrarLog('produto_criado', `${itens.length > 1 ? `${itens.length} variações de ` : ''}${nome} – preço ${brl(preco)}, custo ${brl(custoN)}, estoque inicial ${itens.reduce((t, i) => t + (i.estoque || 0), 0)}`,
+        { nome, variacoes: itens.map((i) => [i.tipo, i.cor, i.tamanho].filter(Boolean).join(' / ') || 'única'), preco, custo: custoN });
+    }
     toast(editando ? 'Produto atualizado.' : `${itens.length} produto(s) cadastrado(s).`, 'ok');
     return true;
   }
@@ -325,6 +342,7 @@ async function excluir(p) {
   const ok = await confirmar(`Excluir definitivamente "${nomeProduto(p)}"? As vendas antigas continuam no histórico. Se preferir manter o cadastro, use "Inativar".`, { ok: 'Excluir', perigo: true });
   if (!ok) return false;
   store.commit([{ op: 'delete', col: 'produtos', id: p.id }, { op: 'delete', col: 'custos', id: p.id }]);
+  registrarLog('produto_excluido', `Excluiu ${nomeProduto(p)} (código ${p.codigo || '—'}, estoque ${Number(p.estoque) || 0})`, { produtoId: p.id, codigo: p.codigo });
   toast('Produto excluído.', 'ok');
   return true;
 }
@@ -432,6 +450,7 @@ function importarPlanilha() {
       }
     }
     store.commit(ops);
+    registrarLog('produtos_importados', `Importou planilha: ${novos} produto(s) novo(s), ${atualizados} atualizado(s)`, { novos, atualizados });
     toast(`Importação concluída: ${novos} novo(s), ${atualizados} atualizado(s).`, 'ok', 5000);
     return true;
   }
