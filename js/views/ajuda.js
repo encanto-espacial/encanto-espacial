@@ -155,11 +155,21 @@ const SECOES = [
       <li>Em <b>Formato da etiqueta</b>, informe largura e altura em milímetros (ex.: 50 × 30), as colunas do rolo e o que deve aparecer (loja, nome, preço).</li>
       <li>Confira a <b>pré-visualização</b> e toque em <b>Imprimir</b>.</li>
     </ol>
-    <h4>Na janela de impressão</h4>
+    <h4>Escolha o papel</h4>
     <ul>
-      <li>Escolha a <b>impressora térmica</b>.</li>
-      <li>Margens: <b>Nenhuma</b>. Escala: <b>100%</b> (desmarque "ajustar à página").</li>
-      <li>No driver da impressora, o tamanho do papel deve ser igual ao da etiqueta.</li>
+      <li><b>Rolo de impressora térmica:</b> uma etiqueta por vez, no tamanho exato (ex.: 50 × 30 mm).</li>
+      <li><b>Folha A4:</b> várias etiquetas por folha, com linha tracejada para recortar. Serve para impressora comum ou folha adesiva.</li>
+    </ul>
+    <h4>Imprimir pelo celular ou tablet (impressora térmica)</h4>
+    <ol>
+      <li>Toque em <b>Baixar PDF</b>: o arquivo sai com páginas do tamanho exato da etiqueta.</li>
+      <li>Abra o PDF no <b>aplicativo da impressora térmica</b> (ou em "Compartilhar" → app da impressora) e imprima.</li>
+    </ol>
+    <p class="dica">O botão <b>Imprimir</b> no celular usa a impressão do Android, que força papel A4 — por isso saía uma etiqueta pequena em cada folha.</p>
+    <h4>Imprimir pelo notebook</h4>
+    <ul>
+      <li>Com a impressora térmica instalada: <b>Imprimir</b> → escolha a impressora, margens <b>Nenhuma</b>, escala <b>100%</b> e papel do tamanho da etiqueta.</li>
+      <li>Em folha A4: escolha papel <b>A4</b> e escala <b>100%</b> (desmarque "ajustar à página").</li>
     </ul>
     <p class="dica">Sócios podem tocar em <b>Salvar como padrão</b> para que todos usem o mesmo formato. Produto sem código? Toque em <b>Gerar código</b> na lista.</p>`
   },

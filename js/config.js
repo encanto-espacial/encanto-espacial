@@ -39,5 +39,5 @@ export const LOJA_PADRAO = {
   descontoMaxVendedor: 10,
   categorias: ['Camisetas', 'Bonés', 'Chaveiros', 'Ímãs', 'Canecas', 'Artesanato', 'Cerâmica', 'Bijuterias', 'Doces regionais', 'Decoração', 'Outros'],
   tamanhos: ['PP', 'P', 'M', 'G', 'GG', 'XG', '2', '4', '6', '8', '10', '12', '14'],
-  etiqueta: { largura: 50, altura: 30, colunas: 1, espaco: 2, mostrarLoja: true, mostrarNome: true, mostrarPreco: true }
+  etiqueta: { papel: 'rolo', largura: 50, altura: 30, colunas: 1, espaco: 2, mostrarLoja: true, mostrarNome: true, mostrarPreco: true }
 };

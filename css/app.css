@@ -291,6 +291,9 @@ tr.cancelada td { color: #98a2b3; text-decoration: line-through; }
 .etiqueta svg { max-width: 100%; display: block; }
 
 #printArea { display: none; }
+.folha-a4 { display: flex; flex-wrap: wrap; gap: 2mm; align-content: flex-start; }
+.folha-a4 .etiqueta { break-inside: avoid; page-break-inside: avoid; }
+.etiqueta.recorte { outline: 0.2mm dashed #bbb; }
 @media print {
   body.imprimindo > *:not(#printArea) { display: none !important; }
   body.imprimindo #printArea { display: block; }
