@@ -105,7 +105,7 @@ function telaLogin(modo = 'entrar') {
   if (esq) esq.onclick = async () => {
     const email = f.email.value.trim();
     if (!email) return toast('Digite seu e-mail primeiro.', 'alerta');
-    try { await store.resetSenha(email); toast('Enviamos um link de redefinição para seu e-mail.', 'ok'); } catch (err) { toast(err.message, 'erro'); }
+    try { await store.resetSenha(email); toast('Se este e-mail tiver conta, chegará um link para criar nova senha (confira também o Spam). Não chegou? Talvez a conta ainda não exista: use "Criar conta".', 'ok', 9000); } catch (err) { toast(err.message, 'erro'); }
   };
 }
 

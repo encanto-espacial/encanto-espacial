@@ -8,7 +8,7 @@ import {
 } from '../../vendor/firebase.js';
 
 const ERROS = {
-  'auth/invalid-credential': 'E-mail ou senha incorretos.',
+  'auth/invalid-credential': 'E-mail ou senha incorretos. Se ainda não tem conta, toque em "Criar conta".',
   'auth/wrong-password': 'E-mail ou senha incorretos.',
   'auth/user-not-found': 'E-mail ou senha incorretos.',
   'auth/invalid-email': 'E-mail inválido.',
