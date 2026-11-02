@@ -1,0 +1,78 @@
+rules_version = '2';
+
+// Regras de segurança do Encanto Espacial.
+// Copie este arquivo inteiro em: Firebase Console → Firestore Database → Regras → Publicar.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() { return request.auth != null; }
+    function caminhoEu() { return /databases/$(database)/documents/usuarios/$(request.auth.uid); }
+    function eu() { return get(caminhoEu()).data; }
+    function ativo() {
+      return logado() && exists(caminhoEu()) && eu().ativo == true && eu().papel in ['socio', 'vendedor'];
+    }
+    function socio() { return ativo() && eu().papel == 'socio'; }
+
+    // Marca de "loja já configurada": criada pelo primeiro usuário (que vira sócio).
+    match /config/setup {
+      allow read: if logado();
+      allow create: if logado() && request.resource.data.socioUid == request.auth.uid;
+    }
+    // Configurações da loja (nome, etiquetas, categorias…)
+    match /config/loja {
+      allow read: if ativo();
+      allow write: if socio();
+    }
+
+    match /usuarios/{uid} {
+      allow read: if (logado() && request.auth.uid == uid) || socio();
+      // Auto-cadastro: pendente de aprovação, ou primeiro sócio (somente se a loja ainda não foi configurada).
+      allow create: if logado() && request.auth.uid == uid && (
+        request.resource.data.papel == 'pendente' ||
+        (request.resource.data.papel == 'socio'
+          && !exists(/databases/$(database)/documents/config/setup)
+          && getAfter(/databases/$(database)/documents/config/setup).data.socioUid == uid)
+      );
+      allow update: if socio();
+      allow delete: if socio() && request.auth.uid != uid;
+    }
+
+    match /produtos/{id} {
+      allow read: if ativo();
+      allow create, delete: if socio();
+      // Vendedores só alteram o estoque (vendas, entradas e saídas).
+      allow update: if socio() || (ativo()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estoque', 'atualizadoEm']));
+    }
+
+    // Custos ficam separados para que vendedores não vejam custo nem margem.
+    match /custos/{id} {
+      allow read, write: if socio();
+    }
+
+    match /vendas/{id} {
+      // Sócios também podem criar (necessário para importar backups).
+      allow create: if socio() || (ativo() && request.resource.data.vendedorUid == request.auth.uid
+        && request.resource.data.status == 'ok');
+      allow read: if socio() || (ativo() && resource.data.vendedorUid == request.auth.uid);
+      allow update: if socio();   // cancelamento
+      allow delete: if false;
+    }
+
+    match /movimentos/{id} {
+      allow create: if socio() || (ativo() && request.resource.data.usuarioUid == request.auth.uid);
+      allow read: if socio();
+      allow update: if socio();   // reimportação de backup
+      allow delete: if false;
+    }
+
+    match /consignantes/{id} {
+      allow read: if ativo();
+      allow write: if socio();
+    }
+
+    match /acertos/{id} {
+      allow read, write: if socio();
+    }
+  }
+}
